@@ -58,7 +58,10 @@ userSchema.pre('save', async function(next){
 
 //validate the password with passed on user password
 userSchema.methods.isValidatedPassword = async function(userSendPassword){
-    return await bcrypt.compare(this.password, userSendPassword);
+    console.log(this.password, userSendPassword);
+    // const r = await bcrypt.compare(this.password, userSendPassword);
+    // console.log(`r:${r}`);
+    return await bcrypt.compare(userSendPassword, this.password);
 }
 
 //create and return JWT token
@@ -76,7 +79,7 @@ userSchema.methods.getForgotPasswordToken = function(){
     //this is already a secure string
     //hashing it further
     //getting a hash - make sure to get a hash on backend
-     this.forgotPasswordToken = crypto.createHash('sha256').update(forgotToken).digest('hex');
+    this.forgotPasswordToken = crypto.createHash('sha256').update(forgotToken).digest('hex');
 
     //  ..time of token
     this.forgotPasswordExpiry = Date.now() + 20*60*1000  //20 mins
