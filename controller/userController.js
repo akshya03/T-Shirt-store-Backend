@@ -167,3 +167,159 @@ exports.getLoggedInUserDetails = BigPromise(async (req, res, next)=>{
         user
     });
 });
+
+exports.changePassword = BigPromise(async (req, res, next)=>{
+    const userId = req.user.id;
+
+    const user = await User.findById(userId).select("+password");
+
+    const isCorrectOldPassword = await user.isValidatedPassword(req.body.oldPassword);
+
+    if(!isCorrectOldPassword)
+        return next(new CustomError('old password is incorrect'));
+
+    user.password = req.body.newPassword;
+
+    await user.save();
+    console.log(`Password updated successfully`);
+    cookieToken(user, res);
+});
+
+
+exports.updateUserDetails = BigPromise(async (req, res, next)=>{
+    //add a check for email and body. if not present, then raise an issue
+
+    const newData = {
+        name: req.body.name,
+        email: req.body.email
+    };
+
+    if(req.files && req.files.photo){
+        const user = await User.findById(req.user.id);
+
+        const imageId = user.photo.id;
+        //deleting previous photo on cloudinary
+        const resp = await cloudinary.v2.uploader.destroy(imageId);
+
+        //uploading new photo
+        let file = req.files.photo;
+        const result = await cloudinary.v2.uploader.upload(file.tempFilePath, {
+            folder: "users",
+            width: 150,
+            crop: "scale"
+        });
+
+        newData.photo = {
+            id: result.public_id,
+            secure_url: result.secure_url
+        }
+    }
+
+    const user = await User.findByIdAndUpdate(req.user.id, newData,{
+        new: true,
+        runValidators: true,
+        useFindAndModify: false
+    });
+
+    console.log('Details updated successfully');
+    res.status(200).json({
+        success: true,
+        user
+    });
+});
+
+//ROLE ROUTES
+
+//admin roles
+exports.adminAllUser = BigPromise(async (req, res, next)=>{
+    const users = await User.find();
+
+    res.status(200).json({
+        success: true,
+        users
+    });
+});
+
+exports.adminGetOneUser = BigPromise(async (req, res, next)=>{
+    const user =await User.findById(req.params.id);
+    if(!user)
+        next(new CustomError('No user found', 400));
+
+    res.status(200).json({
+        success: true,
+        user
+    });
+});
+
+//allow admin to update role of a user
+exports.adminUpdateOneUserDetails = BigPromise(async (req, res, next)=>{
+    //add a check for email and body. if not present, then raise an issue
+
+    const newData = {
+        name: req.body.name,
+        email: req.body.email,
+        role: req.body.role     //frontend should provide roles list
+    };
+
+
+
+    //FOR NOW, WE ARE NOT LETTING ADMIN UPDATE PHOTO OF USERS
+    // if(req.files && !req.files.photo){
+    //     const user =await User.findById(req.user.id);
+
+    //     const imageId = user.photo.id;
+    //     //deleting previous photo on cloudinary
+    //     const resp = await cloudinary.v2.uploader.destroy(imageId);
+
+    //     //uploading new photo
+    //     let file = req.files.photo;
+    //     const result = await cloudinary.v2.uploader.upload(file.tempFilePath, {
+    //         folder: "users",
+    //         width: 150,
+    //         crop: "scale"
+    //     });
+
+    //     newData.photo = {
+    //         id: result.public_id,
+    //         secure_url: result.secure_url
+    //     }
+    // }
+
+    const user = await User.findByIdAndUpdate(req.params.id, newData,{
+        new: true,
+        runValidators: true,
+        useFindAndModify: false
+    });
+
+    console.log('Details updated successfully');
+    res.status(200).json({
+        success: true,
+        user
+    });
+});
+
+
+exports.adminDeleteOneUser = BigPromise(async (req, res, next)=>{
+    const user = await User.findBtId(req.params.id);
+
+    if(!user)
+        return next(new CustomError('No such user found', 401));
+
+    const imageId = user.photo.id;
+    await cloudinary.v2.uploader.destroy(imageId);
+    await user.remove();
+
+    res.status(200).json({
+        success: true
+    })
+})
+
+//manager only route
+exports.managerRole = BigPromise(async (req, res, next)=>{
+    const users = await User.find({role: 'user'});
+
+    res.status(200).json({
+        success: true,
+        users
+    });
+});

@@ -19,3 +19,14 @@ exports.isLoggedIn = BigPromise(async (req, res, next)=>{
     req.user = await User.findById(decoded.id);   //using the middleware, we have injected one more property "user" (we can call it "superman" if we want), this can be accessed anywhere now
     next();
 });
+
+
+//since we are spreading it (...roles), admin string passed from routes will get added to routes array.
+//and from req.user.role, we will get role from database
+exports.customRole = (...roles)=>{      //converting parameter to array
+    return (req, res, next)=>{
+        if(!roles.includes(req.user.role))
+            return next(new CustomError('You are not allowed for this resource', 403));
+        next();
+    };
+};
