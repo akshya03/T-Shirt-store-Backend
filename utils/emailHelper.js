@@ -1,27 +1,27 @@
-const nodemailer = require('emailhelper');
+const nodemailer = require('nodemailer');
 
-const mailHelper = async ()=>{
+const mailHelper = async (option)=>{
 
-    //copied from docs https://nodemailer.com/about/
-    const transporter = nodemailer.createTransport({
-        host: "smtp.forwardemail.net",
-        port: 465,
-        auth: {
-          // TODO: replace `user` and `pass` values from <https://forwardemail.net>
-          user: "REPLACE-WITH-YOUR-ALIAS@YOURDOMAIN.COM",
-          pass: "REPLACE-WITH-YOUR-GENERATED-PASSWORD",
-        },
-      });
+  //copied from docs https://nodemailer.com/about/
+  const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      auth: {
+        
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
 
-    const message = {
-        from: '"Fred Foo 👻" <foo@example.com>', // sender address
-        to: option.mail,
-        subject: option.subject,
-        text: option.message
-        // html: "<b>Hello world?</b>", // html body
-      }
+  const message = {
+      from: 'akshya@lco.dev', // sender address
+      to: option.email,
+      subject: option.subject,
+      text: option.message
+      // html: "<b>Hello world?</b>", // html body
+  }
 
-    await transporter.sendMail();
+  await transporter.sendMail(message);
 };
 
 module.exports = mailHelper;
